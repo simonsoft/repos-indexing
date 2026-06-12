@@ -37,12 +37,14 @@
 	<properties>
 		<solr-version>8.11.1</solr-version>
 		
-		<quarkus-plugin.version>3.2.11.Final</quarkus-plugin.version>
+		<quarkus-plugin.version>3.34.6</quarkus-plugin.version>
 		<quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
 		<quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-		<quarkus.platform.version>3.2.11.Final</quarkus.platform.version>
+		<quarkus.platform.version>3.34.6</quarkus.platform.version>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
 		
-		<surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+		<surefire-plugin.version>3.2.5</surefire-plugin.version>
 	</properties>
 	
 	<dependencyManagement>
@@ -96,6 +98,13 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+		<!-- Keep Solr test framework's Log4j core aligned with the API version selected by Quarkus. -->
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.25.3</version>
+			<scope>test</scope>
+		</dependency>
 		<dependency>
 			<groupId>se.simonsoft</groupId>
 			<artifactId>cms-testing</artifactId>
@@ -133,6 +142,16 @@
 			<version>${logback-version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>io.quarkus</groupId>
+			<artifactId>quarkus-junit</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.vintage</groupId>
+			<artifactId>junit-vintage-engine</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 	
 	<build>
@@ -142,7 +161,12 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire-plugin.version}</version>
                 <configuration>
-                    <argLine>-Dtest.solr.allowed.securerandom=NativePRNG</argLine>
+                    <argLine>
+                        -Dtest.solr.allowed.securerandom=NativePRNG
+                        -Dtests.locale=en-US
+                        -Dtests.timezone=UTC
+                        --add-opens java.base/java.lang=ALL-UNNAMED
+                    </argLine>
                 </configuration>
             </plugin>
             <plugin>
