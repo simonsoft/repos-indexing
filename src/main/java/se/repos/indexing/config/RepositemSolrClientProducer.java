@@ -4,7 +4,6 @@
 package se.repos.indexing.config;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Produces;
@@ -17,7 +16,7 @@ public class RepositemSolrClientProducer {
 	@Produces
 	@ApplicationScoped
 	@Named("repositem")
-	@Any
+	@RepositemSolr
 	public SolrClient createRepositemSolrClient(@Default Instance<SolrClient> solrClient) {
 		return solrClient.get();
 	}
