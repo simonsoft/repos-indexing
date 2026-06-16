@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 
+import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -36,6 +37,7 @@ import se.simonsoft.cms.item.inspection.CmsChangesetReader;
 import se.simonsoft.cms.item.inspection.CmsContentsReader;
 import se.simonsoft.cms.item.properties.CmsItemProperties;
 
+@RequestScoped
 public class ReposIndexingPerRepository implements ReposIndexing {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
