@@ -13,7 +13,6 @@ import java.util.concurrent.Semaphore;
 
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +96,7 @@ public class ReposIndexingPerRepository implements ReposIndexing {
 	}
 
 	@Inject
-	public void setRevisionLookup(@Named("inspection") CmsRepositoryLookup lookup) {
+	public void setRevisionLookup(CmsRepositoryLookup lookup) {
 		this.revisionLookup = lookup;
 	}
 	
