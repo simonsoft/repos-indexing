@@ -5,6 +5,7 @@ package se.repos.indexing.twophases;
 
 import java.util.Date;
 
+import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -37,6 +38,7 @@ import se.simonsoft.cms.item.properties.CmsItemProperties;
  * (and get updated based on indexing progress)
  * so that any service could use it to ask for status.
  */
+@Dependent
 public class RepositoryIndexStatus {
 	
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
