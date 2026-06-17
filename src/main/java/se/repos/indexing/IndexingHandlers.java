@@ -3,9 +3,6 @@
  */
 package se.repos.indexing;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -31,9 +28,6 @@ public abstract class IndexingHandlers {
 
 	/**
 	 * This is not implemented, but we do need an API for extending the default chain.
-	 * 
-	 * There is {@link IndexingHandlers#configureFirst(Object)} and {@link IndexingHandlers#configureLast(Object)}
-	 * but those are probably only usefulr for tests where you add a hanldler or two.
 	 * 
 	 * For custom ordering there's {@link Group} and {@link IndexingHandlers#STANDARD}, but those are difficult to use.
 	 * 
@@ -90,70 +84,5 @@ public abstract class IndexingHandlers {
 				// do we need to optimize? we never delete from this core, except at clean/resync //add(MarkerOptimizeSolrjRepositem.class);
 			}}));
 		}});
-	
-	/**
-	 * Bind standard handler classes to a guice multibinder, without compile time dependencies
-	 * @param guiceMultibinder instance of com.google.inject.multibindings.Multibinder for IndexingItemHandler
-	 */
-	public static void configureFirst(Object guiceMultibinder) {
-		to(guiceMultibinder, STANDARD.get(Group.Unblock));
-		to(guiceMultibinder, STANDARD.get(Group.Structure));
-		to(guiceMultibinder, STANDARD.get(Group.Fast));
-		to(guiceMultibinder, STANDARD.get(Group.Nice));
-		to(guiceMultibinder, STANDARD.get(Group.Content));
-	}
 
-	/**
-	 * Bind standard handler classes to a guice multibinder, without compile time dependencies
-	 * @param guiceMultibinder instance of com.google.inject.multibindings.Multibinder for IndexingItemHandler
-	 */
-	public static void configureLast(Object guiceMultibinder) {
-		to(guiceMultibinder, STANDARD.get(Group.Final));
-	}
-	
-	public static void to(Object guiceMultibinder, Iterable<Class<? extends IndexingItemHandler>> handlers) {
-		avoidCompileTimeDependency(guiceMultibinder, "to", Class.class, handlers);
-	}
-	
-	public static void to(Object guiceMultibinder, Class<? extends IndexingItemHandler>... handlers) {
-		to(guiceMultibinder, (Iterable<Class<? extends IndexingItemHandler>>) Arrays.asList(handlers));
-	}
-	
-	public static void toInstance(Object guiceMultibinder, Iterable<? extends IndexingItemHandler> handlers) {
-		avoidCompileTimeDependency(guiceMultibinder, "toInstance", Object.class, handlers);
-	}
-	
-	public static void toInstance(Object guiceMultibinder, IndexingItemHandler... handlers) {
-		toInstance(guiceMultibinder, Arrays.asList(handlers));
-	}
-	
-	/**
-	 * Because we have such a useful utility here we're exposing it for wider use, no guarantees made.
-	 */
-	public static void toArbitrary(Object guiceBinder, @SuppressWarnings("rawtypes") Iterable to) {
-		avoidCompileTimeDependency(guiceBinder, "to", Class.class, to);
-	}
-	
-	private static void avoidCompileTimeDependency(Object guiceMultibinder, String bindToMethodName, Class<?> bindToType, @SuppressWarnings("rawtypes") Iterable bindings) {
-		try {
-			Method addBinding = guiceMultibinder.getClass().getDeclaredMethod("addBinding");
-			addBinding.setAccessible(true);
-			for (Object handler : bindings) {
-				Object binder = addBinding.invoke(guiceMultibinder);
-				Method to = binder.getClass().getMethod(bindToMethodName,bindToType);				
-				to.invoke(binder, handler);
-			}
-		} catch (SecurityException e) {
-			throw new RuntimeException("Error using multibinder at runtime", e);
-		} catch (NoSuchMethodException e) {
-			throw new RuntimeException("Error using multibinder at runtime", e);
-		} catch (IllegalArgumentException e) {
-			throw new RuntimeException("Error using multibinder at runtime", e);
-		} catch (IllegalAccessException e) {
-			throw new RuntimeException("Error using multibinder at runtime", e);
-		} catch (InvocationTargetException e) {
-			throw new RuntimeException("Error using multibinder at runtime", e);
-		}		
-	}
-	
 }
