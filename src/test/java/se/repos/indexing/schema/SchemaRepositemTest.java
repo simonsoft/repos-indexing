@@ -3,22 +3,30 @@
  */
 package se.repos.indexing.schema;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Date;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 
 import static org.mockito.Mockito.*;
 import se.repos.indexing.item.HandlerPathinfo;
@@ -30,31 +38,43 @@ import se.simonsoft.cms.item.RepoRevision;
 import se.simonsoft.cms.item.events.change.CmsChangesetItem;
 import se.simonsoft.cms.item.indexing.IdStrategyDefault;
 
-public class SchemaRepositemTest extends SolrTestCaseJ4 {
+public class SchemaRepositemTest {
 
-	public static String solrhome = "se/repos/indexing/solr";
-	
-	private SolrClient solrTestServer = null;
+	private static final DockerImageName SOLR_IMAGE = DockerImageName.parse("solr:9.6.1");
+	private static final int SOLR_PORT = 8983;
 
-	@BeforeClass
-	public static void beforeTests() throws Exception {
-		try {
-			SolrTestCaseJ4.initCore(solrhome + "/repositem/conf/solrconfig.xml", solrhome + "/repositem/conf/schema.xml",
-					"src/test/resources/" + solrhome); // has to be in classpath because "collection1" is hardcoded in TestHarness initCore/createCore
-		} catch (Exception e) {
-			System.out.println("getSolrConfigFile()=" + getSolrConfigFile());
-			System.out.println("testSolrHome=" + testSolrHome);
-			throw e;
-		}
+	private static GenericContainer<?> solr;
+	private static SolrClient repositem;
+
+	@BeforeAll
+	public static void startSolr() {
+		Path configset = Path.of("src/main/resources/se/repos/indexing/solr/repositem").toAbsolutePath();
+		solr = new GenericContainer<>(SOLR_IMAGE)
+				.withExposedPorts(SOLR_PORT)
+				.withCopyFileToContainer(MountableFile.forHostPath(configset), "/repositem-config")
+				.withCommand("solr-precreate", "repositem", "/repositem-config")
+				.waitingFor(Wait.forHttp("/solr/repositem/select?q=*:*")
+						.forPort(SOLR_PORT)
+						.forStatusCode(200)
+						.withStartupTimeout(Duration.ofMinutes(2)));
+		solr.start();
+		repositem = new HttpJdkSolrClient.Builder(solrUrl()).build();
 	}
-	
-	@After
-	public void tearDown() throws Exception {
-		//printHits(new SolrQuery("*:*"));
-		// tests have different repositories so let's see if they can use the same solr instance //solrTestServer = null;
-		// clear data from this test
-		//getSolr().deleteByQuery("*:*");
-		super.tearDown();
+
+	@AfterEach
+	public void clearIndex() throws SolrServerException, IOException {
+		repositem.deleteByQuery("*:*");
+		repositem.commit();
+	}
+
+	@AfterAll
+	public static void stopSolr() throws IOException {
+		if (repositem != null) {
+			repositem.close();
+		}
+		if (solr != null) {
+			solr.stop();
+		}
 	}
 	
 	@SuppressWarnings("unused")
@@ -74,13 +94,10 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 	}
 
 	/**
-	 * @return instance for injection when integration testing our logic with solr, for index testing we do fine with SolrTestCaseJ4 helper methods
+	 * @return instance for integration testing our logic with Solr.
 	 */
 	public SolrClient getSolr() {
-		if (solrTestServer == null) {
-			solrTestServer = new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName());
-		}
-		return solrTestServer;
+		return repositem;
 	}
 	
 	@Test
@@ -96,15 +113,15 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc2);
 		solr.commit();
 		
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:MAP12345678")).getResults().getNumFound());
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:TOP12345678")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:MAP12345678")).getResults().getNumFound(), "exact match");
+		assertEquals(1, solr.query(new SolrQuery("name:TOP12345678")).getResults().getNumFound(), "exact match");
 		
-		assertEquals("lowercase match", 1, solr.query(new SolrQuery("name:map12345678")).getResults().getNumFound());
-		assertEquals("lowercase match", 1, solr.query(new SolrQuery("name:top12345678")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:map12345678")).getResults().getNumFound(), "lowercase match");
+		assertEquals(1, solr.query(new SolrQuery("name:top12345678")).getResults().getNumFound(), "lowercase match");
 		
 		// no split on number - debatable but splitting will generate very spurious hits when searching to product names etc
-		assertEquals("no split on number", 0, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound());
-		assertEquals("no split on number", 0, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound());
+		assertEquals(0, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound(), "no split on number");
+		assertEquals(0, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound(), "no split on number");
 	}
 	
 	@Test
@@ -121,21 +138,21 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.commit();
 		
 		// exact match requires quotes in SolR 8
-		assertEquals("no longer exact match", 2, solr.query(new SolrQuery("name:MAP\\ 12345678")).getResults().getNumFound());
-		assertEquals("no longer exact match", 2, solr.query(new SolrQuery("name:TOP\\ 12345678")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:MAP\\ 12345678")).getResults().getNumFound(), "no longer exact match");
+		assertEquals(2, solr.query(new SolrQuery("name:TOP\\ 12345678")).getResults().getNumFound(), "no longer exact match");
 		
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"MAP 12345678\"")).getResults().getNumFound());
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"TOP 12345678\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:\"MAP 12345678\"")).getResults().getNumFound(), "exact match");
+		assertEquals(1, solr.query(new SolrQuery("name:\"TOP 12345678\"")).getResults().getNumFound(), "exact match");
 		
 		// tokenized match (use edismax in order to use space with tokenized)
 		// Not working: should provide more hits if actually tokenized.
 		// Working in SolR 8
-		assertEquals("different delimiter", 2, solr.query(new SolrQuery("name:MAP-12345678")).getResults().getNumFound());
-		assertEquals("different delimiter", 2, solr.query(new SolrQuery("name:TOP-12345678")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:MAP-12345678")).getResults().getNumFound(), "different delimiter");
+		assertEquals(2, solr.query(new SolrQuery("name:TOP-12345678")).getResults().getNumFound(), "different delimiter");
 
-		assertEquals("split on space", 1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound());
-		assertEquals("split on space", 1, solr.query(new SolrQuery("name:top")).getResults().getNumFound());
-		assertEquals("split on space", 2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound(), "split on space");
+		assertEquals(1, solr.query(new SolrQuery("name:top")).getResults().getNumFound(), "split on space");
+		assertEquals(2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound(), "split on space");
 	}
 	
 	@Test
@@ -152,16 +169,16 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.commit();
 		
 		// exact match requires quotes in SolR 8
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"MAP_12345678\"")).getResults().getNumFound());
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"TOP_12345678\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:\"MAP_12345678\"")).getResults().getNumFound(), "exact match");
+		assertEquals(1, solr.query(new SolrQuery("name:\"TOP_12345678\"")).getResults().getNumFound(), "exact match");
 		
-		assertEquals("split on underscore", 1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound());
-		assertEquals("split on underscore", 2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound(), "split on underscore");
+		assertEquals(2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound(), "split on underscore");
 		
 		// no split on underscore - debatable but good when using numbering (have the option to use space if splitting is desired)
 		// Now splitting on underscore (changed with SolR 8?)
-		assertEquals("no split on underscore", 1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound());
-		assertEquals("no split on underscore", 2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound(), "no split on underscore");
+		assertEquals(2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound(), "no split on underscore");
 	}
 	
 	@Test
@@ -178,13 +195,13 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.commit();
 		
 		// exact match requires quotes in SolR 8
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"MAP-12345678\"")).getResults().getNumFound());
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"TOP-12345678\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:\"MAP-12345678\"")).getResults().getNumFound(), "exact match");
+		assertEquals(1, solr.query(new SolrQuery("name:\"TOP-12345678\"")).getResults().getNumFound(), "exact match");
 		// split on dash
-		assertEquals("split on dash", 1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound());
-		assertEquals("split on dash", 2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound());
-		assertEquals("split on dash, even hit with quote query", 1, solr.query(new SolrQuery("name:\"TOP 12345678\"")).getResults().getNumFound());
-		assertEquals("split on dash", 2, solr.query(new SolrQuery("name:TOP OR name:12345678")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:TOP")).getResults().getNumFound(), "split on dash");
+		assertEquals(2, solr.query(new SolrQuery("name:12345678")).getResults().getNumFound(), "split on dash");
+		assertEquals(1, solr.query(new SolrQuery("name:\"TOP 12345678\"")).getResults().getNumFound(), "split on dash, even hit with quote query");
+		assertEquals(2, solr.query(new SolrQuery("name:TOP OR name:12345678")).getResults().getNumFound(), "split on dash");
 	}
 	
 	@Test
@@ -208,42 +225,42 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		
 		// SolR 6: sow=true (exact match works with both quotes and escaping space)
 		// SolR 7: sow=false ("enabling proper function of analysis filters")
-		assertEquals("no longer exact match", 2, solr.query(new SolrQuery("name:Large\\ Machine")).getResults().getNumFound());
-		assertEquals("no longer exact match", 2, solr.query(new SolrQuery("name:Small\\ machine")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:Large\\ Machine")).getResults().getNumFound(), "no longer exact match");
+		assertEquals(2, solr.query(new SolrQuery("name:Small\\ machine")).getResults().getNumFound(), "no longer exact match");
 
 		// exact match requires quotes in SolR 8
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"Large Machine\"")).getResults().getNumFound());
-		assertEquals("exact match", 1, solr.query(new SolrQuery("name:\"Small machine\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:\"Large Machine\"")).getResults().getNumFound(), "exact match");
+		assertEquals(1, solr.query(new SolrQuery("name:\"Small machine\"")).getResults().getNumFound(), "exact match");
 		
 		// tokenized match (analysis not working in SolR 6 and before)
 		// analysis working in SolR 8
-		assertEquals("different delimiter", 2, solr.query(new SolrQuery("name:Large-Machine")).getResults().getNumFound());
-		assertEquals("different delimiter", 2, solr.query(new SolrQuery("name:Small_machine")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:Large-Machine")).getResults().getNumFound(), "different delimiter");
+		assertEquals(2, solr.query(new SolrQuery("name:Small_machine")).getResults().getNumFound(), "different delimiter");
 		
-		assertEquals("lowercase, exact match", 1, solr.query(new SolrQuery("name:\"large machine\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:\"large machine\"")).getResults().getNumFound(), "lowercase, exact match");
 		
-		assertEquals("one term, first", 1, solr.query(new SolrQuery("name:large")).getResults().getNumFound());
-		assertEquals("one term, not first", 2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:large")).getResults().getNumFound(), "one term, first");
+		assertEquals(2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound(), "one term, not first");
 		
 		// This can't work since removing defaultSearchField = id.
 		// It never worked as expected, only the first token was searched in 'name', following tokens searched in 'id'.
 		/*
-		assertEquals("", 1, solr.query(new SolrQuery("name:large huge machine")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("name:large huge machine")).getResults().getNumFound(), "");
 		*/
 		// Can be achieved with OR
-		assertEquals("need OR notation since removing defaultSearchField", 2, solr.query(new SolrQuery("name:large OR name:huge OR name:machine")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:large OR name:huge OR name:machine")).getResults().getNumFound(), "need OR notation since removing defaultSearchField");
 		// Can be achieved with edismax
-		assertEquals("need edismax since removing defaultSearchField", 2, solr.query(new SolrQuery("large huge machine").add("defType", "edismax").add("qf", "name")).getResults().getNumFound());
-		assertEquals("need edismax since removing defaultSearchField", 2, solr.query(new SolrQuery("huge large odd machine").add("defType", "edismax").add("qf", "name")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("large huge machine").add("defType", "edismax").add("qf", "name")).getResults().getNumFound(), "need edismax since removing defaultSearchField");
+		assertEquals(2, solr.query(new SolrQuery("huge large odd machine").add("defType", "edismax").add("qf", "name")).getResults().getNumFound(), "need edismax since removing defaultSearchField");
 		
-		assertEquals("one term", 2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound());
-		//assertEquals("term order", 1, solr.query(new SolrQuery("name:machine large")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound(), "one term");
+		//assertEquals(1, solr.query(new SolrQuery("name:machine large")).getResults().getNumFound(), "term order");
 
 		// Makes no sense...
 		// Resolved: made no sense because of defaultSearchField = id.
 		/*
-		assertEquals("all terms must match?", 0, solr.query(new SolrQuery("name:huge machine")).getResults().getNumFound());
-		assertEquals("all terms must match - should be 0 hits??", 2, solr.query(new SolrQuery("name:machine huge")).getResults().getNumFound());
+		assertEquals(0, solr.query(new SolrQuery("name:huge machine")).getResults().getNumFound(), "all terms must match?");
+		assertEquals(2, solr.query(new SolrQuery("name:machine huge")).getResults().getNumFound(), "all terms must match - should be 0 hits??");
 		*/
 	}
 	
@@ -260,27 +277,27 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc2);
 		solr.commit();
 		
-		assertEquals("one term", 2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound());
-		assertEquals("one term", 1, solr.query(new SolrQuery("name:large")).getResults().getNumFound());
-		assertEquals("one term", 1, solr.query(new SolrQuery("name:small")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound(), "one term");
+		assertEquals(1, solr.query(new SolrQuery("name:large")).getResults().getNumFound(), "one term");
+		assertEquals(1, solr.query(new SolrQuery("name:small")).getResults().getNumFound(), "one term");
 
-		assertEquals("one term, uppercase", 2, solr.query(new SolrQuery("name:MACHINE")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:MACHINE")).getResults().getNumFound(), "one term, uppercase");
 		
 		// exact match requires quotes in SolR 8
-		assertEquals("no exact match reverse", 0, solr.query(new SolrQuery("name:\"Large Machine\"")).getResults().getNumFound());
-		assertEquals("no exact match reverse", 0, solr.query(new SolrQuery("name:\"Small machine\"")).getResults().getNumFound());
+		assertEquals(0, solr.query(new SolrQuery("name:\"Large Machine\"")).getResults().getNumFound(), "no exact match reverse");
+		assertEquals(0, solr.query(new SolrQuery("name:\"Small machine\"")).getResults().getNumFound(), "no exact match reverse");
 
 		// Different in 8.8.0
-		assertEquals("no exact match reverse", 2, solr.query(new SolrQuery("name:Large\\ Machine")).getResults().getNumFound());
-		assertEquals("no exact match reverse", 2, solr.query(new SolrQuery("name:Small\\ machine")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:Large\\ Machine")).getResults().getNumFound(), "no exact match reverse");
+		assertEquals(2, solr.query(new SolrQuery("name:Small\\ machine")).getResults().getNumFound(), "no exact match reverse");
 		
-		assertEquals("no longer exact match", 2, solr.query(new SolrQuery("name:Machine\\ Large")).getResults().getNumFound());
-		assertEquals("no longer exact match", 2, solr.query(new SolrQuery("name:machine\\ Small")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:Machine\\ Large")).getResults().getNumFound(), "no longer exact match");
+		assertEquals(2, solr.query(new SolrQuery("name:machine\\ Small")).getResults().getNumFound(), "no longer exact match");
 		
 		// tokenized match (analysis not working in SolR 6 and before)
 		// analysis working in SolR 8
-		assertEquals("tokenized match, different delimiter", 2, solr.query(new SolrQuery("name:Large-Machine")).getResults().getNumFound());
-		assertEquals("tokenized match, different delimiter", 2, solr.query(new SolrQuery("name:Small_machine")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:Large-Machine")).getResults().getNumFound(), "tokenized match, different delimiter");
+		assertEquals(2, solr.query(new SolrQuery("name:Small_machine")).getResults().getNumFound(), "tokenized match, different delimiter");
 	}
 	
 	@Test
@@ -298,17 +315,17 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc2);
 		solr.commit();
 		
-		assertEquals("one term", 2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound());
-		assertEquals("one term", 1, solr.query(new SolrQuery("name:large")).getResults().getNumFound());
-		assertEquals("one term", 1, solr.query(new SolrQuery("name:small")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("name:machine")).getResults().getNumFound(), "one term");
+		assertEquals(1, solr.query(new SolrQuery("name:large")).getResults().getNumFound(), "one term");
+		assertEquals(1, solr.query(new SolrQuery("name:small")).getResults().getNumFound(), "one term");
 	
-		assertEquals("one term", 2, solr.query(new SolrQuery("pathext:png")).getResults().getNumFound());
-		assertEquals("one term", 2, solr.query(new SolrQuery("pathext:PNG")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("pathext:png")).getResults().getNumFound(), "one term");
+		assertEquals(2, solr.query(new SolrQuery("pathext:PNG")).getResults().getNumFound(), "one term");
 		
 		SolrDocumentList r = solr.query(new SolrQuery("pathext:png").setSort("pathnamebase", ORDER.asc)).getResults();
 		SolrDocument r1 = r.get(0);
 		SolrDocument r2 = r.get(1);
-		assertEquals("case preserving but insensitive", "PNG", r1.getFieldValue("pathext"));
+		assertEquals("PNG", r1.getFieldValue("pathext"), "case preserving but insensitive");
 		assertEquals("Machine Large", r1.getFieldValue("pathnamebase"));
 		assertEquals("png", r2.getFieldValue("pathext"));
 	}
@@ -329,26 +346,26 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should tokenize on newline", 1, solr.query(new SolrQuery("prop_svn.ignore:ignore2")).getResults().getNumFound());
-		assertEquals("Should still match the full value", 1, solr.query(new SolrQuery("prop_svn.ignore:ignore1\\\nignore2")).getResults().getNumFound());
-		//assertEquals("What id the full value has one token that doesn't match?", 0, solr.query(new SolrQuery("prop_svn.ignore:ignore1\nignore0")).getResults().getNumFound());
-		assertEquals("Should tokenize on whitespace", 1, solr.query(new SolrQuery("prop_svn.externals:\"^/some/folder\"")).getResults().getNumFound());
-		assertEquals("Should tokenize on tab", 1, solr.query(new SolrQuery("prop_svn.externals:\"^/some/other/folder\"")).getResults().getNumFound());
-		assertEquals("Should match on line", 1, solr.query(new SolrQuery("prop_svn.externals:\"ext1 ^/some/folder\"")).getResults().getNumFound());
-		assertEquals("What if a line has a mismatching token", 0, solr.query(new SolrQuery("prop_svn.externals:\"ext0 ^/some/folder\"")).getResults().getNumFound());
-		//assertEquals("What if a line has a mismatching token that exists somewhere else", 0, solr.query(new SolrQuery("prop_svn.externals:\"ext2 ^/some/folder\"")).getResults().getNumFound());
-		assertEquals("Could match on line regarless of whitespace", 1, solr.query(new SolrQuery("prop_svn.externals:\"ext2 ^/some/other/folder\"")).getResults().getNumFound());
-		assertEquals("Should separate on comma", 1, solr.query(new SolrQuery("prop_custom.values:Value")).getResults().getNumFound());
-		assertEquals("Should separate on semicolon", 1, solr.query(new SolrQuery("prop_custom.values2:Separated")).getResults().getNumFound());
-		//how?//assertEquals("Should separate on pipe", 1, solr.query(new SolrQuery("prop_custom.lang:de-DE")).getResults().getNumFound());
-		assertEquals("Should separate on whitespace", 1, solr.query(new SolrQuery("prop_custom.tags:JUnit")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("prop_svn.ignore:ignore2")).getResults().getNumFound(), "Should tokenize on newline");
+		assertEquals(1, solr.query(new SolrQuery("prop_svn.ignore:ignore1\\\nignore2")).getResults().getNumFound(), "Should still match the full value");
+		//assertEquals(0, solr.query(new SolrQuery("prop_svn.ignore:ignore1\nignore0")).getResults().getNumFound(), "What id the full value has one token that doesn't match?");
+		assertEquals(1, solr.query(new SolrQuery("prop_svn.externals:\"^/some/folder\"")).getResults().getNumFound(), "Should tokenize on whitespace");
+		assertEquals(1, solr.query(new SolrQuery("prop_svn.externals:\"^/some/other/folder\"")).getResults().getNumFound(), "Should tokenize on tab");
+		assertEquals(1, solr.query(new SolrQuery("prop_svn.externals:\"ext1 ^/some/folder\"")).getResults().getNumFound(), "Should match on line");
+		assertEquals(0, solr.query(new SolrQuery("prop_svn.externals:\"ext0 ^/some/folder\"")).getResults().getNumFound(), "What if a line has a mismatching token");
+		//assertEquals(0, solr.query(new SolrQuery("prop_svn.externals:\"ext2 ^/some/folder\"")).getResults().getNumFound(), "What if a line has a mismatching token that exists somewhere else");
+		assertEquals(1, solr.query(new SolrQuery("prop_svn.externals:\"ext2 ^/some/other/folder\"")).getResults().getNumFound(), "Could match on line regarless of whitespace");
+		assertEquals(1, solr.query(new SolrQuery("prop_custom.values:Value")).getResults().getNumFound(), "Should separate on comma");
+		assertEquals(1, solr.query(new SolrQuery("prop_custom.values2:Separated")).getResults().getNumFound(), "Should separate on semicolon");
+		//how?//assertEquals(1, solr.query(new SolrQuery("prop_custom.lang:de-DE")).getResults().getNumFound(), "Should separate on pipe");
+		assertEquals(1, solr.query(new SolrQuery("prop_custom.tags:JUnit")).getResults().getNumFound(), "Should separate on whitespace");
 		
 		/*
-		assertEquals("Making property search case insensitive wouldn't be good when props contain URLs etc",
-				0, solr.query(new SolrQuery("prop_custom.tags:junit")).getResults().getNumFound());
+		assertEquals(0, solr.query(new SolrQuery("prop_custom.tags:junit")).getResults().getNumFound(),
+				"Making property search case insensitive wouldn't be good when props contain URLs etc");
 		*/
-		assertEquals("Expecting property search to be case insensitive.",
-				1, solr.query(new SolrQuery("prop_custom.tags:junit")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("prop_custom.tags:junit")).getResults().getNumFound(),
+				"Expecting property search to be case insensitive.");
 	}
 	
 	@Test
@@ -360,35 +377,35 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should match simple word", 1, solr.query(new SolrQuery("text:word")).getResults().getNumFound());
-		assertEquals("Should match words in sequence", 1, solr.query(new SolrQuery("text:followed\\ by\\ text")).getResults().getNumFound());
-		assertEquals("Should match quoted words in sequence", 1, solr.query(new SolrQuery("text:\"followed by text\"")).getResults().getNumFound());
-		assertEquals("Should not match quoted words out of sequence", 0, solr.query(new SolrQuery("text:\"followed text\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:word")).getResults().getNumFound(), "Should match simple word");
+		assertEquals(1, solr.query(new SolrQuery("text:followed\\ by\\ text")).getResults().getNumFound(), "Should match words in sequence");
+		assertEquals(1, solr.query(new SolrQuery("text:\"followed by text\"")).getResults().getNumFound(), "Should match quoted words in sequence");
+		assertEquals(0, solr.query(new SolrQuery("text:\"followed text\"")).getResults().getNumFound(), "Should not match quoted words out of sequence");
 
 		
-		assertEquals("Should match Java Class Name camelcase", 1, solr.query(new SolrQuery("text:JavaClassName")).getResults().getNumFound());
-		assertEquals("Should match Java Class Name lowercase", 1, solr.query(new SolrQuery("text:javaclassname")).getResults().getNumFound());
-		assertEquals("Should match Java Method Name camelcase", 1, solr.query(new SolrQuery("text:getMethodName")).getResults().getNumFound());
-		assertEquals("Should match Java Method Name lowercase", 1, solr.query(new SolrQuery("text:getmethodname")).getResults().getNumFound());
-		assertEquals("Should match Java Method Name wildcard", 1, solr.query(new SolrQuery("text:getmethod*")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:JavaClassName")).getResults().getNumFound(), "Should match Java Class Name camelcase");
+		assertEquals(1, solr.query(new SolrQuery("text:javaclassname")).getResults().getNumFound(), "Should match Java Class Name lowercase");
+		assertEquals(1, solr.query(new SolrQuery("text:getMethodName")).getResults().getNumFound(), "Should match Java Method Name camelcase");
+		assertEquals(1, solr.query(new SolrQuery("text:getmethodname")).getResults().getNumFound(), "Should match Java Method Name lowercase");
+		assertEquals(1, solr.query(new SolrQuery("text:getmethod*")).getResults().getNumFound(), "Should match Java Method Name wildcard");
 
-		assertEquals("Should match Java Method 2 Name camelcase", 1, solr.query(new SolrQuery("text:getMethod2Name")).getResults().getNumFound());
-		assertEquals("Should match Java Method 2 Name lowercase", 1, solr.query(new SolrQuery("text:getmethod2name")).getResults().getNumFound());
-		assertEquals("Should match Java Method 2 Name wildcard", 1, solr.query(new SolrQuery("text:getmethod2*")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:getMethod2Name")).getResults().getNumFound(), "Should match Java Method 2 Name camelcase");
+		assertEquals(1, solr.query(new SolrQuery("text:getmethod2name")).getResults().getNumFound(), "Should match Java Method 2 Name lowercase");
+		assertEquals(1, solr.query(new SolrQuery("text:getmethod2*")).getResults().getNumFound(), "Should match Java Method 2 Name wildcard");
 		
-		assertEquals("Should match Product Name case-switch", 1, solr.query(new SolrQuery("text:ProductNAME")).getResults().getNumFound());
-		assertEquals("Should match Product Name lowercase", 1, solr.query(new SolrQuery("text:productname")).getResults().getNumFound());
-		assertEquals("Should match Product Name leading capital", 1, solr.query(new SolrQuery("text:Productname")).getResults().getNumFound());
-		assertEquals("Should match Product Name in context (actually matching 'The')", 1, solr.query(new SolrQuery("text:The\\ ProductNAME\\ followed\\ by\\ text")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:ProductNAME")).getResults().getNumFound(), "Should match Product Name case-switch");
+		assertEquals(1, solr.query(new SolrQuery("text:productname")).getResults().getNumFound(), "Should match Product Name lowercase");
+		assertEquals(1, solr.query(new SolrQuery("text:Productname")).getResults().getNumFound(), "Should match Product Name leading capital");
+		assertEquals(1, solr.query(new SolrQuery("text:The\\ ProductNAME\\ followed\\ by\\ text")).getResults().getNumFound(), "Should match Product Name in context (actually matching 'The')");
 		// Will fail if using preserveOriginal="1".
-		assertEquals("Should match Product Name in context - Quoted", 1, solr.query(new SolrQuery("text:\"The ProductNAME followed by text\"")).getResults().getNumFound());
-		assertEquals("Should match Product Name lowercase in context - Quoted", 1, solr.query(new SolrQuery("text:\"The Productname followed by text\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:\"The ProductNAME followed by text\"")).getResults().getNumFound(), "Should match Product Name in context - Quoted");
+		assertEquals(1, solr.query(new SolrQuery("text:\"The Productname followed by text\"")).getResults().getNumFound(), "Should match Product Name lowercase in context - Quoted");
 
 		// Difficult to combine individual components with quoted search.
 		/*
-		assertEquals("Could match Product Name individual components", 1, solr.query(new SolrQuery("text:product")).getResults().getNumFound());
-		assertEquals("Could match Product Name individual components", 1, solr.query(new SolrQuery("text:name")).getResults().getNumFound());
-		assertEquals("Could match Product Name separated components", 1, solr.query(new SolrQuery("text:product name")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:product")).getResults().getNumFound(), "Could match Product Name individual components");
+		assertEquals(1, solr.query(new SolrQuery("text:name")).getResults().getNumFound(), "Could match Product Name individual components");
+		assertEquals(1, solr.query(new SolrQuery("text:product name")).getResults().getNumFound(), "Could match Product Name separated components");
 		*/
 	}
 
@@ -401,19 +418,20 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should match simple word", 1, solr.query(new SolrQuery("text:word")).getResults().getNumFound());
-		assertEquals("Should match exact", 1, solr.query(new SolrQuery("text:top-level")).getResults().getNumFound());
-		assertEquals("Should match exact - Quoted", 1, solr.query(new SolrQuery("text:\"top-level\"")).getResults().getNumFound());
-		assertEquals("Could match exact - Quoted space instead of dash", 1, solr.query(new SolrQuery("text:\"top level\"")).getResults().getNumFound());
-		assertEquals("Should match part 1", 1, solr.query(new SolrQuery("text:top")).getResults().getNumFound());
-		assertEquals("Should match part 2", 1, solr.query(new SolrQuery("text:level")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:word")).getResults().getNumFound(), "Should match simple word");
+		assertEquals(1, solr.query(new SolrQuery("text:top-level")).getResults().getNumFound(), "Should match exact");
+		assertEquals(1, solr.query(new SolrQuery("text:\"top-level\"")).getResults().getNumFound(), "Should match exact - Quoted");
+		assertEquals(1, solr.query(new SolrQuery("text:\"top level\"")).getResults().getNumFound(), "Could match exact - Quoted space instead of dash");
+		assertEquals(1, solr.query(new SolrQuery("text:top")).getResults().getNumFound(), "Should match part 1");
+		assertEquals(1, solr.query(new SolrQuery("text:level")).getResults().getNumFound(), "Should match part 2");
 		
 		// Below asserts just documents current behavior, would be fine if they also hit.
-		assertEquals("Unlikely to match catenated", 0, solr.query(new SolrQuery("text:toplevel")).getResults().getNumFound());
+		assertEquals(0, solr.query(new SolrQuery("text:toplevel")).getResults().getNumFound(), "Unlikely to match catenated");
 	}
 	
 	
-	@Test @Ignore //Stem Possessive is a feature of the WDF.
+	@Test
+	@Disabled("Stem Possessive is a feature of the WDF.")
 	public void testFulltextSearchEnglishPossessive() throws Exception {
 		SolrClient solr = getSolr();
 		SolrInputDocument doc = new SolrInputDocument();
@@ -422,22 +440,22 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should match simple word", 1, solr.query(new SolrQuery("text:word")).getResults().getNumFound());
-		assertEquals("Should match name 1", 1, solr.query(new SolrQuery("text:staffan")).getResults().getNumFound());
-		assertEquals("Should match name 2", 1, solr.query(new SolrQuery("text:thomas")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:word")).getResults().getNumFound(), "Should match simple word");
+		assertEquals(1, solr.query(new SolrQuery("text:staffan")).getResults().getNumFound(), "Should match name 1");
+		assertEquals(1, solr.query(new SolrQuery("text:thomas")).getResults().getNumFound(), "Should match name 2");
 		
 		// Likely only possible with WDF in both pipelines or without WDF.
 		/*
-		assertEquals("Should match possessive name 1", 1, solr.query(new SolrQuery("text:Staffan's")).getResults().getNumFound());
-		assertEquals("Should match possessive name 2", 1, solr.query(new SolrQuery("text:Thomas'")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:Staffan's")).getResults().getNumFound(), "Should match possessive name 1");
+		assertEquals(1, solr.query(new SolrQuery("text:Thomas'")).getResults().getNumFound(), "Should match possessive name 2");
 		*/
 		
 		// Works when WDF is only in index pipeline.
-		assertEquals("Could match quoted no possessive", 1, solr.query(new SolrQuery("text:\"Staffan & Thomas code\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:\"Staffan & Thomas code\"")).getResults().getNumFound(), "Could match quoted no possessive");
 		
 		// Likely only possible with WDF in query pipeline or without WDF.
 		/*
-		assertEquals("Could match quoted exact", 1, solr.query(new SolrQuery("text:\"Staffan's & Thomas' code\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:\"Staffan's & Thomas' code\"")).getResults().getNumFound(), "Could match quoted exact");
 		*/
 	}
 	
@@ -450,24 +468,24 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should match simple word", 1, solr.query(new SolrQuery("text:word")).getResults().getNumFound());
-		assertEquals("Should match exact product", 1, solr.query(new SolrQuery("text:SD500")).getResults().getNumFound());
-		assertEquals("Should match exact product lowercase", 1, solr.query(new SolrQuery("text:sd500")).getResults().getNumFound());
-		assertEquals("Should match exact product quoted", 1, solr.query(new SolrQuery("text:\"SD500\"")).getResults().getNumFound());
-		assertEquals("Should match exact product wildcard", 1, solr.query(new SolrQuery("text:SD5*")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:word")).getResults().getNumFound(), "Should match simple word");
+		assertEquals(1, solr.query(new SolrQuery("text:SD500")).getResults().getNumFound(), "Should match exact product");
+		assertEquals(1, solr.query(new SolrQuery("text:sd500")).getResults().getNumFound(), "Should match exact product lowercase");
+		assertEquals(1, solr.query(new SolrQuery("text:\"SD500\"")).getResults().getNumFound(), "Should match exact product quoted");
+		assertEquals(1, solr.query(new SolrQuery("text:SD5*")).getResults().getNumFound(), "Should match exact product wildcard");
 		
 		// WDF needs splitOnNumerics for these, which requires catenate or preserve for above asserts.
 		/*
-		assertEquals("Could match part 1", 1, solr.query(new SolrQuery("text:SD")).getResults().getNumFound());
-		assertEquals("Could match part 2", 1, solr.query(new SolrQuery("text:500")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:SD")).getResults().getNumFound(), "Could match part 1");
+		assertEquals(1, solr.query(new SolrQuery("text:500")).getResults().getNumFound(), "Could match part 2");
 		*/
 		
 		// These asserts document the desire to have less spurious hits
-		assertEquals("Avoid matching other product SD200", 0, solr.query(new SolrQuery("text:SD200")).getResults().getNumFound());
-		assertEquals("Avoid matching other product XX500", 0, solr.query(new SolrQuery("text:XX500")).getResults().getNumFound());
+		assertEquals(0, solr.query(new SolrQuery("text:SD200")).getResults().getNumFound(), "Avoid matching other product SD200");
+		assertEquals(0, solr.query(new SolrQuery("text:XX500")).getResults().getNumFound(), "Avoid matching other product XX500");
 
 		
-		assertEquals("Should match quoted context", 1, solr.query(new SolrQuery("text:\"The SD500 product\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:\"The SD500 product\"")).getResults().getNumFound(), "Should match quoted context");
 	}
 	
 	@Test
@@ -479,15 +497,15 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should match simple word", 1, solr.query(new SolrQuery("text:word")).getResults().getNumFound());
-		assertEquals("Should match exact product", 1, solr.query(new SolrQuery("text:SD-500")).getResults().getNumFound());
-		assertEquals("Should match exact product lowercase", 1, solr.query(new SolrQuery("text:sd-500")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:word")).getResults().getNumFound(), "Should match simple word");
+		assertEquals(1, solr.query(new SolrQuery("text:SD-500")).getResults().getNumFound(), "Should match exact product");
+		assertEquals(1, solr.query(new SolrQuery("text:sd-500")).getResults().getNumFound(), "Should match exact product lowercase");
 		
 		// With hyphen also the StandardTokenizer will split.
-		assertEquals("Could match part 1", 1, solr.query(new SolrQuery("text:SD")).getResults().getNumFound());
-		assertEquals("Could match part 2", 1, solr.query(new SolrQuery("text:500")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:SD")).getResults().getNumFound(), "Could match part 1");
+		assertEquals(1, solr.query(new SolrQuery("text:500")).getResults().getNumFound(), "Could match part 2");
 		
-		assertEquals("Could match quoted context", 1, solr.query(new SolrQuery("text:\"The SD-500 product\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:\"The SD-500 product\"")).getResults().getNumFound(), "Could match quoted context");
 	}
 	
 	@Test
@@ -499,13 +517,13 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(doc);
 		solr.commit();
 		
-		assertEquals("Should match simple word", 1, solr.query(new SolrQuery("text:contact")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:contact")).getResults().getNumFound(), "Should match simple word");
 		// Likely NOT possible with WDF in index pipeline.
-		assertEquals("Should match exact email", 1, solr.query(new SolrQuery("text:support@example.com")).getResults().getNumFound());
-		assertEquals("Should match exact email - Quoted", 1, solr.query(new SolrQuery("text:\"support@example.com\"")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("text:support@example.com")).getResults().getNumFound(), "Should match exact email");
+		assertEquals(1, solr.query(new SolrQuery("text:\"support@example.com\"")).getResults().getNumFound(), "Should match exact email - Quoted");
 		
-		assertEquals("Could match part 1", 1, solr.query(new SolrQuery("text:support")).getResults().getNumFound());
-		assertEquals("Could match part 2", 1, solr.query(new SolrQuery("text:example.com")).getResults().getNumFound());	
+		assertEquals(1, solr.query(new SolrQuery("text:support")).getResults().getNumFound(), "Could match part 1");
+		assertEquals(1, solr.query(new SolrQuery("text:example.com")).getResults().getNumFound(), "Could match part 2");	
 	}
 	
 	
@@ -523,9 +541,9 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		doc.addField("text", "quite secret content, though searchable");
 		solr.add(doc.getSolrDoc());
 		solr.commit();
-		assertEquals("Should be searchable on path", 1, solr.query(new SolrQuery("path:dir*")).getResults().getNumFound());
-		assertEquals("Should be searchable on pathext", 1, solr.query(new SolrQuery("pathext:txt")).getResults().getNumFound());
-		assertEquals("Should be searchable on text", 1, solr.query(new SolrQuery("text:secret")).getResults().getNumFound());
+		assertEquals(1, solr.query(new SolrQuery("path:dir*")).getResults().getNumFound(), "Should be searchable on path");
+		assertEquals(1, solr.query(new SolrQuery("pathext:txt")).getResults().getNumFound(), "Should be searchable on pathext");
+		assertEquals(1, solr.query(new SolrQuery("text:secret")).getResults().getNumFound(), "Should be searchable on text");
 		
 		IndexingDocIncrementalSolrj docd = new IndexingDocIncrementalSolrj();
 		docd.addField("id", "f#02");
@@ -538,16 +556,15 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		solr.add(docd.getSolrDoc());
 		solr.add(doc.getSolrDoc());
 		solr.commit();
-		assertEquals("Both head and historical should be searchable on path",
-				2, solr.query(new SolrQuery("path:dir*")).getResults().getNumFound());
-		assertEquals("Both head and historical should be searchable on pathext",
-				2, solr.query(new SolrQuery("pathext:txt")).getResults().getNumFound());
-		assertEquals("Text search for historical has been scoped out, if made stored it might affect access control requirements", 
-		//assertEquals("Historical should still be searchable on text after head flag update",
-				0, solr.query(new SolrQuery("text:secret")).getResults().getNumFound());
+		assertEquals(2, solr.query(new SolrQuery("path:dir*")).getResults().getNumFound(),
+				"Both head and historical should be searchable on path");
+		assertEquals(2, solr.query(new SolrQuery("pathext:txt")).getResults().getNumFound(),
+				"Both head and historical should be searchable on pathext");
+		assertEquals(0, solr.query(new SolrQuery("text:secret")).getResults().getNumFound(),
+				"Text search for historical has been scoped out, if made stored it might affect access control requirements");
 	}
 	
-	
+	@Test
 	public void testHandleRepeatedPathSegments() throws SolrServerException, IOException {
 		SolrClient solr = getSolr();		
 		// Not really unit testing the schema here because the path logic in the handler is too relevant - could be switched to 
@@ -569,7 +586,7 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 	
 
 	@Test
-	@Ignore // very incomplete
+	@Disabled("Very incomplete.")
 	public void testPathAnalysis() throws SolrServerException, IOException {
 		SolrClient solr = getSolr();		
 		// Not really unit testing the schema here because the path logic in the handler is too relevant - could be switched to 
@@ -591,5 +608,8 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		
 		fail("need to test effects of analyzed path* fields and confirm the need for name and extension");
 	}
-	
+
+	private static String solrUrl() {
+		return "http://" + solr.getHost() + ":" + solr.getMappedPort(SOLR_PORT) + "/solr/repositem";
+	}
 }
