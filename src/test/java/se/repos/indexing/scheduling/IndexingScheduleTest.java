@@ -3,13 +3,12 @@
  */
 package se.repos.indexing.scheduling;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import se.repos.indexing.IndexingItemHandler;
 import se.repos.indexing.item.IndexingItemProgress;
