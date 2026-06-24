@@ -16,7 +16,6 @@ public class MockableSvnDumpProfile implements QuarkusTestProfile {
 	public Map<String, String> getConfigOverrides() {
 		return Map.of(
 				SvnDumpConfig.DUMP_PATH, DEFAULT_DUMP_PATH,
-				"quarkus.solr.devservices.core", "repositem",
-				"quarkus.solr.devservices.enabled", "false");
+				"quarkus.solr.devservices.core", "repositem");
 	}
 }

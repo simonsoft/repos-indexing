@@ -34,21 +34,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkus.arc.ClientProxy;
-import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 
 import se.repos.indexing.ReposIndexing;
 import se.repos.indexing.config.MockableSvnDumpProfile;
-import se.repos.indexing.config.SolrRepositemTestResource;
 import se.repos.indexing.scheduling.IndexingSchedule;
 import se.simonsoft.cms.item.RepoRevision;
 import se.simonsoft.cms.item.inspection.CmsChangesetReader;
 import se.simonsoft.svn.runtime.SvnDump;
 
 @QuarkusTest
-@QuarkusTestResource(value = SolrRepositemTestResource.class, restrictToAnnotatedClass = true)
 @TestProfile(MockableSvnDumpProfile.class)
 public class ReposIndexingPerRepositoryIntegrationTest {
 

@@ -131,6 +131,15 @@
 	</dependencies>
 	
 	<build>
+		<testResources>
+			<testResource>
+				<directory>src/test/resources</directory>
+			</testResource>
+			<testResource>
+				<directory>src/main/resources/se/repos/indexing/solr/repositem</directory>
+				<targetPath>solr</targetPath>
+			</testResource>
+		</testResources>
 		<plugins>
 			<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
