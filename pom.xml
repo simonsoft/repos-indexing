@@ -69,6 +69,7 @@
 			<artifactId>quarkus-svn-extension</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
 		</dependency>
+		<!-- Solr Dev Service expects the core layout as classpath:/solr. Keep the repositem core in its existing package path and expose it there only for tests; see testResources below. -->
 		<dependency>
 			<groupId>com.fntsoftware</groupId>
 			<artifactId>solr</artifactId>
