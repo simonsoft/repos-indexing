@@ -11,12 +11,14 @@ import jakarta.inject.Named;
 
 import org.apache.solr.client.solrj.SolrClient;
 
+import io.smallrye.common.annotation.Identifier;
+
 public class RepositemSolrClientProducer {
 
 	@Produces
 	@ApplicationScoped
 	@Named("repositem")
-	@RepositemSolr
+	@Identifier("repositem")
 	public SolrClient createRepositemSolrClient(@Default Instance<SolrClient> solrClient) {
 		return solrClient.get();
 	}
