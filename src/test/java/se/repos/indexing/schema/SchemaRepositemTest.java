@@ -532,6 +532,7 @@ public class SchemaRepositemTest {
 		assertEquals("Both head and historical should be searchable on pathext",
 				2, solr.query(new SolrQuery("pathext:txt")).getResults().getNumFound());
 		assertEquals("Text search for historical has been scoped out, if made stored it might affect access control requirements",
+		//assertEquals("Historical should still be searchable on text after head flag update",
 				0, solr.query(new SolrQuery("text:secret")).getResults().getNumFound());
 	}
 	
