@@ -6,29 +6,25 @@ package se.repos.indexing.schema;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import java.io.IOException;
-import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Date;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.utility.DockerImageName;
-import org.testcontainers.utility.MountableFile;
 
 import static org.mockito.Mockito.*;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import se.repos.indexing.config.SolrRepositemProfile;
 import se.repos.indexing.item.HandlerPathinfo;
 import se.repos.indexing.item.IndexingItemProgress;
 import se.repos.indexing.twophases.IndexingDocIncrementalSolrj;
@@ -38,43 +34,18 @@ import se.simonsoft.cms.item.RepoRevision;
 import se.simonsoft.cms.item.events.change.CmsChangesetItem;
 import se.simonsoft.cms.item.indexing.IdStrategyDefault;
 
+@QuarkusTest
+@TestProfile(SolrRepositemProfile.class)
 public class SchemaRepositemTest {
 
-	private static final DockerImageName SOLR_IMAGE = DockerImageName.parse("solr:9.6.1");
-	private static final int SOLR_PORT = 8983;
-
-	private static GenericContainer<?> solr;
-	private static SolrClient repositem;
-
-	@BeforeAll
-	public static void startSolr() {
-		Path configset = Path.of("src/main/resources/se/repos/indexing/solr/repositem").toAbsolutePath();
-		solr = new GenericContainer<>(SOLR_IMAGE)
-				.withExposedPorts(SOLR_PORT)
-				.withCopyFileToContainer(MountableFile.forHostPath(configset), "/repositem-config")
-				.withCommand("solr-precreate", "repositem", "/repositem-config")
-				.waitingFor(Wait.forHttp("/solr/repositem/select?q=*:*")
-						.forPort(SOLR_PORT)
-						.forStatusCode(200)
-						.withStartupTimeout(Duration.ofMinutes(2)));
-		solr.start();
-		repositem = new HttpJdkSolrClient.Builder(solrUrl()).build();
-	}
+	@Inject
+	@Named("repositem")
+	SolrClient repositem;
 
 	@AfterEach
 	public void clearIndex() throws SolrServerException, IOException {
 		repositem.deleteByQuery("*:*");
 		repositem.commit();
-	}
-
-	@AfterAll
-	public static void stopSolr() throws IOException {
-		if (repositem != null) {
-			repositem.close();
-		}
-		if (solr != null) {
-			solr.stop();
-		}
 	}
 	
 	@SuppressWarnings("unused")
@@ -607,9 +578,5 @@ public class SchemaRepositemTest {
 		solr.add(doc.getSolrDoc());
 		
 		fail("need to test effects of analyzed path* fields and confirm the need for name and extension");
-	}
-
-	private static String solrUrl() {
-		return "http://" + solr.getHost() + ":" + solr.getMappedPort(SOLR_PORT) + "/solr/repositem";
 	}
 }
