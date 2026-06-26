@@ -8,7 +8,7 @@ import static org.mockito.Mockito.*;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingDoc;
 import se.simonsoft.cms.item.events.change.CmsChangesetItem;

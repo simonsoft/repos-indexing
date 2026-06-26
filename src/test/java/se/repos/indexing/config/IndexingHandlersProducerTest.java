@@ -3,8 +3,8 @@
  */
 package se.repos.indexing.config;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingHandlers;
 import se.repos.indexing.IndexingItemHandler;
@@ -47,8 +47,8 @@ public class IndexingHandlersProducerTest {
 		IndexingHandlersProducer producer = new IndexingHandlersProducer();
 		CmsContentsReader contentsReader = mock(CmsContentsReader.class);
 
-		assertInstanceOf(ItemContentsMemory.class, producer.createItemContentBufferStrategy(contentsReader));
-		assertInstanceOf(ItemPropertiesImmediate.class, producer.createItemPropertiesBufferStrategy(contentsReader));
+		assertTrue(producer.createItemContentBufferStrategy(contentsReader) instanceof ItemContentsMemory);
+		assertTrue(producer.createItemPropertiesBufferStrategy(contentsReader) instanceof ItemPropertiesImmediate);
 	}
 
 	private List<Class<? extends IndexingItemHandler>> standardHandlerTypes() {

@@ -3,14 +3,14 @@
  */
 package se.repos.indexing.item;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingDoc;
 import se.simonsoft.cms.item.CmsItemPath;
@@ -78,14 +78,14 @@ public class HandlerPathinfoTest {
 		assertEquals("a file.txt", f.getFieldValue("pathsegment3"));
 		assertNull(f.getFieldValue("pathsegment4"));
 		
-		assertEquals("A", f.getFieldValue("pathstat"), "Must be String in order to get correct JSON from SolR");
+		assertEquals("Must be String in order to get correct JSON from SolR", "A", f.getFieldValue("pathstat"));
 		assertEquals(null, f.getFieldValue("pathstatprop")); // schema comment can be interpreted as "" but does it matter to search?
 		assertEquals("file", f.getFieldValue("type"));
 		
 		assertEquals(rev.getNumber(), f.getFieldValue("rev"));
 		assertEquals(rev.getDate(), f.getFieldValue("revt"));
 		RepoRevision revActual = new RepoRevision((Long) f.getFieldValue("rev"), (Date) f.getFieldValue("revt"));
-		assertEquals("2012-04-11T12:01:46.600", revActual.getTimeIso(), "formatting of date might truncate trailing 00"); // The issue might be relates to JSON transfer.
+		assertEquals("formatting of date might truncate trailing 00", "2012-04-11T12:01:46.600", revActual.getTimeIso()); // The issue might be relates to JSON transfer.
 		assertEquals(rev.getNumber() - 2, f.getFieldValue("revc"));
 		assertEquals(new Date(rev.getDate().getTime() - 1000), f.getFieldValue("revct"));
 		
@@ -152,7 +152,7 @@ public class HandlerPathinfoTest {
 		
 		pathinfo.handle(p2);
 		IndexingDoc f2 = p2.getFields();
-		assertEquals("A", f2.getFieldValue("pathstat"), "Must be String in order to get correct JSON from SolR");
+		assertEquals("Must be String in order to get correct JSON from SolR", "A", f2.getFieldValue("pathstat"));
 		assertEquals(null, f2.getFieldValue("pathstatprop"));
 		//assertEquals(false, f2.getFieldValue("copyhas")); // #789 #919 Suppressing "copyhas" field for now
 		assertEquals("/my/dir/a file.txt", f2.getFieldValue("copyfrom"));
@@ -180,8 +180,8 @@ public class HandlerPathinfoTest {
 		
 		pathinfo.handle(p);
 		
-		assertEquals("https://h.ost:1080/svn/repo1/my%20file$txt", p.getFields().getFieldValue("urlhead"),
-				"Should use CmsRepository's URL encoding");
+		assertEquals("Should use CmsRepository's URL encoding",
+				"https://h.ost:1080/svn/repo1/my%20file$txt", p.getFields().getFieldValue("urlhead"));
 	}
 	
 	@Test

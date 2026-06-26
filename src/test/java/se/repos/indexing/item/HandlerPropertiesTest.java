@@ -3,9 +3,10 @@
  */
 package se.repos.indexing.item;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingDoc;
 import se.repos.indexing.IndexingItemHandler;

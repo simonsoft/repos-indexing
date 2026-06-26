@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.scheduling;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Iterator;
@@ -12,7 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingItemHandler;
 import se.repos.indexing.item.IndexingItemProgress;
@@ -36,12 +36,12 @@ public class IndexingUnitTest {
 		
 		IndexingUnit unit = new IndexingUnit(changeset1, handlers);
 		assertNotNull(unit.getItems());
-		assertEquals(item1, unit.getItems().iterator().next(), "should preserver order");
+		assertEquals("should preserver order", item1, unit.getItems().iterator().next());
 		
 		assertEquals(handler1, unit.getHandlers(item1).next());
 		assertTrue(unit.getHandlers(item1).hasNext());
-		assertEquals(handler2, unit.getHandlers(item1).next(),
-				"The iterator should remember the position so that handlers are only returned once per item");
+		assertEquals("The iterator should remember the position so that handlers are only returned once per item",
+				handler2, unit.getHandlers(item1).next());
 		assertFalse(unit.getHandlers(item1).hasNext());
 		
 		Iterator<IndexingItemHandler> h2 = unit.getHandlers(item2);

@@ -3,8 +3,10 @@
  */
 package se.repos.indexing.item;
 
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import static org.junit.Assert.*;
+
+import org.junit.Ignore;
+import org.junit.Test;
 
 import se.simonsoft.cms.item.CmsItemPath;
 
@@ -36,13 +38,13 @@ Exception in thread "main" java.lang.IllegalStateException: Obsoleted revision 5
 public class CmsItemPathNonvalidatingTest {
 
 	@Test
-	@Disabled // Current spec is to validate and skip invalid, so reporting consumers don't get these invalid matches
+	@Ignore // Current spec is to validate and skip invalid, so reporting consumers don't get these invalid matches
 	public void testFilenameEndingWithWhitespace() {
 		new CmsItemPath("/xml/product_documents/Installation Instructions/DVCompact/Sections for DVCompact ");
 	}
 	
 	@Test
-	@Disabled // Current spec is to validate and skip invalid, so reporting consumers don't get these invalid matches
+	@Ignore // Current spec is to validate and skip invalid, so reporting consumers don't get these invalid matches
 	public void testAnyCharsFromAnyFilesystem() {
 		// except backslash
 		new CmsItemPath("/folder/½!\"#¤%&()=?`¶@£${[]}±+΅~^*'|<>");

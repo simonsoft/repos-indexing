@@ -3,9 +3,10 @@
  */
 package se.repos.indexing.twophases;
 
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 public class IndexingItemProgressPhasesTest {
 

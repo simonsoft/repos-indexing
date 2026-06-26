@@ -3,12 +3,12 @@
  */
 package se.repos.indexing.repository;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.io.ByteArrayInputStream;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingItemHandler;
 import se.repos.indexing.item.IndexingItemProgress;
@@ -66,13 +66,13 @@ public class IndexingItemHandlerContentBufferHandlingTest {
 			enable.handle(progressUnsupported);
 			fail("Expected exception on unsupported progress type");
 		} catch (IllegalStateException e) {
-			assertTrue(e.getMessage().startsWith("Configuration error"), "Got " + e);
+			assertTrue("Got " + e, e.getMessage().startsWith("Configuration error"));
 		}
 		try {
 			disable.handle(progressUnsupported);
 			fail("Expected exception on unsupported progress type");
 		} catch (IllegalStateException e) {
-			assertTrue(e.getMessage().startsWith("Configuration error"), "Got " + e);
+			assertTrue("Got " + e, e.getMessage().startsWith("Configuration error"));
 		}
 	}	
 	

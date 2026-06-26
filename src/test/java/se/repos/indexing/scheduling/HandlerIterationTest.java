@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.scheduling;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.util.Collection;
@@ -13,7 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingItemHandler;
 import se.repos.indexing.Marker;
@@ -62,23 +62,23 @@ public class HandlerIterationTest {
 		
 		Iterator<HandlerCall> c = calls.iterator();
 		assertEquals("Handler1+Item1", c.next().toString());
-		assertEquals("Handler2+Item1", c.next().toString(),
-				"Should proceed with first item until a marker is seen");
-		assertEquals("Marker1+Item1", c.next().toString(),
-				"handle should be called for markers too");
+		assertEquals("Should proceed with first item until a marker is seen",
+				"Handler2+Item1", c.next().toString());
+		assertEquals("handle should be called for markers too",
+				"Marker1+Item1", c.next().toString());
 
-		assertEquals("Handler1+Item2", c.next().toString(),
-				"before next marker both items should run");
+		assertEquals("before next marker both items should run",
+				"Handler1+Item2", c.next().toString());
 		assertEquals("Handler2+Item2", c.next().toString());
 		assertEquals("Marker1+Item2", c.next().toString());
 		
-		assertEquals("Marker1", c.next().toString(),
-				"should then trigger marker");
+		assertEquals("should then trigger marker",
+				"Marker1", c.next().toString());
 		
-		assertEquals("Handler3+Item1", c.next().toString(),
-				"should then proceed to next handler");
-		assertEquals("Handler3+Item2", c.next().toString(),
-				"should then proceed to next handler");
+		assertEquals("should then proceed to next handler",
+				"Handler3+Item1", c.next().toString());
+		assertEquals("should then proceed to next handler",
+				"Handler3+Item2", c.next().toString());
 		assertFalse(c.hasNext());
 	}
 	
@@ -122,21 +122,21 @@ public class HandlerIterationTest {
 		
 		Iterator<HandlerCall> c = calls.iterator();
 		assertEquals("Handler1+Item1", c.next().toString());
-		assertEquals("Marker1+Item1", c.next().toString(),
-				"should skip handler2");
+		assertEquals("should skip handler2",
+				"Marker1+Item1", c.next().toString());
 		
-		assertEquals("Handler1+Item2", c.next().toString(),
-				"should stop at marker and proceed with next item");
-		assertEquals("Marker1+Item2", c.next().toString(),
-				"should skip handler2 for item2 also");
+		assertEquals("should stop at marker and proceed with next item",
+				"Handler1+Item2", c.next().toString());
+		assertEquals("should skip handler2 for item2 also",
+				"Marker1+Item2", c.next().toString());
 		
-		assertEquals("Marker1", c.next().toString(),
-				"should then trigger marker");
+		assertEquals("should then trigger marker",
+				"Marker1", c.next().toString());
 		
-		assertEquals("Handler3+Item1", c.next().toString(),
-				"should then proceed to next handler");
-		assertEquals("Handler3+Item2", c.next().toString(),
-				"should then proceed to next handler");
+		assertEquals("should then proceed to next handler",
+				"Handler3+Item1", c.next().toString());
+		assertEquals("should then proceed to next handler",
+				"Handler3+Item2", c.next().toString());
 		assertFalse(c.hasNext());
 	}
 	
@@ -184,25 +184,25 @@ public class HandlerIterationTest {
 		
 		Iterator<HandlerCall> c = calls.iterator();
 		assertEquals("Handler1+Item1", c.next().toString());
-		assertEquals("Handler2+Item1", c.next().toString(),
-				"Should proceed with first item until a marker is seen");
-		assertEquals("Marker1+ignore", c.next().toString(),
-				"Decision is to ignore the marker, should be flagged before first item (unlike trigger which is after last item)");
-		assertEquals("Handler3+Item1", c.next().toString(),
-				"Marker should be skipped so iteration should proceed through the item");
-		assertEquals("Marker2+Item1", c.next().toString(),
-				"If iteration should proceed on ignored markers, it means that we'll ask for a decision for all markers at the first item reaching them");
-		
-		assertEquals("Handler1+Item2", c.next().toString(),
-				"Marker2 isn't ignored so iteration should go to Item2 next");
+		assertEquals("Should proceed with first item until a marker is seen",
+				"Handler2+Item1", c.next().toString());
+		assertEquals("Decision is to ignore the marker, should be flagged before first item (unlike trigger which is after last item)",
+				"Marker1+ignore", c.next().toString());
+		assertEquals("Marker should be skipped so iteration should proceed through the item",
+				"Handler3+Item1", c.next().toString());
+		assertEquals("If iteration should proceed on ignored markers, it means that we'll ask for a decision for all markers at the first item reaching them",
+				"Marker2+Item1", c.next().toString());
+
+		assertEquals("Marker2 isn't ignored so iteration should go to Item2 next",
+				"Handler1+Item2", c.next().toString());
 		assertEquals("Handler2+Item2", c.next().toString());
 		assertEquals("Handler3+Item2", c.next().toString());
 		assertEquals("Marker2+Item2", c.next().toString());
 		
-		assertEquals("Marker2", c.next().toString(),
-				"After Item2 all is level so marker2 should be triggered");
-		assertEquals("Handler4+Item1", c.next().toString(),
-				"Then there's a handler left");
+		assertEquals("After Item2 all is level so marker2 should be triggered",
+				"Marker2", c.next().toString());
+		assertEquals("Then there's a handler left",
+				"Handler4+Item1", c.next().toString());
 		assertEquals("Handler4+Item2", c.next().toString());
 		assertFalse(c.hasNext());
 	}

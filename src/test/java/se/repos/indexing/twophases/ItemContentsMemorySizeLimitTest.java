@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.twophases;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 import java.io.File;
@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Date;
 
-import org.junit.jupiter.api.Test;
+import org.junit.Test;
 
 import se.repos.indexing.IndexingDoc;
 import se.repos.indexing.item.ItemContentBuffer;
@@ -64,11 +64,11 @@ public class ItemContentsMemorySizeLimitTest {
 		ItemContentBuffer buf = buffer.getBuffer(rev, path, doc);
 		InputStream c1 = buf.getContents();
 		assertEquals("1".getBytes()[0], c1.read());
-		assertEquals(numbefore + 1, expectedtempfolder.list().length, "Expected a new temp file"); // this can be affected by other system activities so if it fails a lot we must get the path from the buffer
+		assertEquals("Expected a new temp file", numbefore + 1, expectedtempfolder.list().length); // this can be affected by other system activities so if it fails a lot we must get the path from the buffer
 		assertEquals("2".getBytes()[0], c1.read());
-		assertEquals("1".getBytes()[0], buf.getContents().read(), "Should allow re-read");
+		assertEquals("Should allow re-read", "1".getBytes()[0], buf.getContents().read());
 		buf.destroy();
-		assertEquals(numbefore, expectedtempfolder.list().length, "Temp file should have been deleted");
+		assertEquals("Temp file should have been deleted", numbefore, expectedtempfolder.list().length);
 		try {
 			buf.getContents();
 			fail("Should not allow buffer read after destroy");
