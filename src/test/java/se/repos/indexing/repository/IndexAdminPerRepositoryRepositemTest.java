@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.repository;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.*;
@@ -15,7 +15,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import se.repos.indexing.IndexAdmin;
 import se.simonsoft.cms.item.CmsRepository;
@@ -52,7 +52,7 @@ public class IndexAdminPerRepositoryRepositemTest {
 		
 		verify(repositem).deleteByQuery("repoid:\"localhost:1234/svn/r\"");
 		verify(repositem).commit(false, true, false);
-		assertEquals("Should notify", 1, calls.size());
+		assertEquals(1, calls.size(), "Should notify");
 	}
 
 }

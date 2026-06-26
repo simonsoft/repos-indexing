@@ -3,14 +3,14 @@
  */
 package se.repos.indexing.twophases;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import se.repos.indexing.IndexingDoc;
 
@@ -25,31 +25,31 @@ public class IndexingDocIncrementalSolrjTest {
 		doc.addField("f1", 2L);
 		assertEquals(false, doc.getFieldValue("fb"));
 		Collection<Object> f1 = doc.getFieldValues("f1");
-		assertEquals("addField should append multi values", 2, f1.size());
+		assertEquals(2, f1.size(), "addField should append multi values");
 		assertTrue(doc.containsKey("f1"));
-		assertTrue("clone should contain all fields", doc.deepCopy().containsKey("f1"));
-		assertTrue("clone should contain all fields", doc.deepCopy().containsKey("fb"));
+		assertTrue(doc.deepCopy().containsKey("f1"), "clone should contain all fields");
+		assertTrue(doc.deepCopy().containsKey("fb"), "clone should contain all fields");
 		doc.setField("fb", true);
-		assertEquals("setField should overwrite", true, doc.getFieldValue("fb"));
+		assertEquals(true, doc.getFieldValue("fb"), "setField should overwrite");
 		doc.setField("f1", 3L);
-		assertEquals("setField should remove old multiValue values", 3L, doc.getFieldValue("f1"));
+		assertEquals(3L, doc.getFieldValue("f1"), "setField should remove old multiValue values");
 		doc.setUpdateMode(true);
-		assertNotNull("clone should be allowed after update mode is changed to true", doc.deepCopy());
+		assertNotNull(doc.deepCopy(), "clone should be allowed after update mode is changed to true");
 		doc.setField("fb", false);
-		assertEquals("field value should still be retrievable in normal form after update mode is switched on, for use from other indexers",
-				false, doc.getFieldValue("fb"));
+		assertEquals(false, doc.getFieldValue("fb"),
+				"field value should still be retrievable in normal form after update mode is switched on, for use from other indexers");
 		Object fb = doc.getSolrDoc().getFieldValue("fb");
-		assertTrue("In updated mode new fields should use 'set' syntax, got " + fb.getClass(), fb instanceof Map);
+		assertTrue(fb instanceof Map, "In updated mode new fields should use 'set' syntax, got " + fb.getClass());
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		Map<String, Object> fbset = (Map) fb;
-		assertEquals("solrj partial update syntax", 1, fbset.size());
-		assertEquals("solrj partial update syntax", "set", fbset.keySet().iterator().next());
+		assertEquals(1, fbset.size(), "solrj partial update syntax");
+		assertEquals("set", fbset.keySet().iterator().next(), "solrj partial update syntax");
 		assertEquals(false, fbset.get("set"));
 		SolrInputDocument updateDoc = doc.getSolrDoc();
-		assertTrue("solr doc should contain updated fields", updateDoc.containsKey("fb"));
-		assertFalse("after update the solr doc should not contain unchanged values", updateDoc.containsKey("f1"));
-		assertEquals("doc should always contain id", "test@1", updateDoc.getFieldValue("id"));
-		assertTrue("solr doc should have the partial update syntax", updateDoc.getFieldValue("fb") instanceof Map);
+		assertTrue(updateDoc.containsKey("fb"), "solr doc should contain updated fields");
+		assertFalse(updateDoc.containsKey("f1"), "after update the solr doc should not contain unchanged values");
+		assertEquals("test@1", updateDoc.getFieldValue("id"), "doc should always contain id");
+		assertTrue(updateDoc.getFieldValue("fb") instanceof Map, "solr doc should have the partial update syntax");
 		try {
 			doc.deepCopy();
 			fail("Expecting deepCopy to fail after field update until we have decided what to do with update fields");
@@ -57,20 +57,20 @@ public class IndexingDocIncrementalSolrjTest {
 			// expected
 		}
 		doc.setField("fx", "new");
-		assertTrue("new fields since update mode true was set should go into next solr doc", doc.getSolrDoc().containsKey("fx"));
+		assertTrue(doc.getSolrDoc().containsKey("fx"), "new fields since update mode true was set should go into next solr doc");
 		// TODO assertEquals("fields that do not exist in solr, should they get the update syntax?", "new", doc.getFieldValue("fx"));		
 		doc.addField("f1", 4L);
 		// TODO Collection<Object> f1u = doc.getFieldValues("f1");
 		//assertTrue("Should have the value from before update", f1u.contains(3L));
 		//assertTrue("Should have the value from after update", f1u.contains(4L));
-		assertTrue("Solr doc should keep the id field in update mode", doc.getSolrDoc().containsKey("id"));
+		assertTrue(doc.getSolrDoc().containsKey("id"), "Solr doc should keep the id field in update mode");
 		Collection<Object> f1solr = doc.getSolrDoc().getFieldValues("f1");
-		assertEquals("Solr multi value field should only have the value from after update", 1, f1solr.size());
-		assertTrue("The value should be a partial update", f1solr.iterator().next() instanceof Map);
+		assertEquals(1, f1solr.size(), "Solr multi value field should only have the value from after update");
+		assertTrue(f1solr.iterator().next() instanceof Map, "The value should be a partial update");
 		@SuppressWarnings("rawtypes")
 		Map f1update = (Map) f1solr.iterator().next();
 		assertEquals(4L, f1update.values().iterator().next());
-		assertEquals("Solr add syntax", "add", f1update.keySet().iterator().next());
+		assertEquals("add", f1update.keySet().iterator().next(), "Solr add syntax");
 	}
 
 	@Test
@@ -80,8 +80,8 @@ public class IndexingDocIncrementalSolrjTest {
 		doc.setField("x", "y");
 		doc.setUpdateMode(true);
 		SolrInputDocument nochanges = doc.getSolrDoc();
-		assertEquals("Can not have any fields if there are no updates because solr would overwrite the id", 0, nochanges.size());
-		assertTrue("Solr can't handle empty document so we should specifically identify this case", nochanges == IndexingDocIncrementalSolrj.UPDATE_MODE_NO_CHANGES);
+		assertEquals(0, nochanges.size(), "Can not have any fields if there are no updates because solr would overwrite the id");
+		assertTrue(nochanges == IndexingDocIncrementalSolrj.UPDATE_MODE_NO_CHANGES, "Solr can't handle empty document so we should specifically identify this case");
 	}
 	
 	@Test
@@ -95,11 +95,11 @@ public class IndexingDocIncrementalSolrjTest {
 		doc.setField("null1", null);
 		doc.addField("string2", "1");
 		doc.addField("string2", "12");
-		assertEquals("Shuld sum up length of strings as approximate size", 23, doc.getContentSize());
+		assertEquals(23, doc.getContentSize(), "Shuld sum up length of strings as approximate size");
 		
 		IndexingDoc doc2 = doc.deepCopy();
 		doc2.addField("string2", "123");
-		assertEquals("size should follow clone", 26, doc2.getContentSize());
+		assertEquals(26, doc2.getContentSize(), "size should follow clone");
 		
 		
 	}

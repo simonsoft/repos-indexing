@@ -3,11 +3,11 @@
  */
 package se.repos.indexing.item;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Date;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import se.simonsoft.cms.item.CmsItemId;
 import se.simonsoft.cms.item.CmsItemPath;
@@ -27,12 +27,12 @@ public class IdStrategyDefaultTest {
 		assertEquals("some.host:123/svn/repo1/a/b.txt@0000000001", strategy.getId(repo, rev, new CmsItemPath("/a/b.txt")));
 		// Do we ever use the repository ID directly? //assertNotEquals("repository id must be distinguished from root item id",
 		//		strategy.getIdRepository(repo), strategy.getIdHead(repo, null));
-		assertTrue("repoid should be prefix to item ids", strategy.getId(repo, rev, new CmsItemPath("/a/b.txt"))
-				.startsWith(strategy.getIdRepository(repo)));
-		assertTrue("repoid should be prefix to commit ids", strategy.getIdCommit(repo, rev)
-				.startsWith(strategy.getIdRepository(repo)));
-		assertTrue("repoid should be prefix to info ids", strategy.getIdEntry(repo, "someRepositoryField")
-				.startsWith(strategy.getIdRepository(repo)));
+		assertTrue(strategy.getId(repo, rev, new CmsItemPath("/a/b.txt"))
+				.startsWith(strategy.getIdRepository(repo)), "repoid should be prefix to item ids");
+		assertTrue(strategy.getIdCommit(repo, rev)
+				.startsWith(strategy.getIdRepository(repo)), "repoid should be prefix to commit ids");
+		assertTrue(strategy.getIdEntry(repo, "someRepositoryField")
+				.startsWith(strategy.getIdRepository(repo)), "repoid should be prefix to info ids");
 	}
 	
 	// Too many assmuptions made on the internal calls in IdStrategy. Independent impl would be better. //@Test
@@ -60,8 +60,8 @@ public class IdStrategyDefaultTest {
 		assertEquals("x-svn://my.host:1234/svn/demo1^", strategy.getIdRepository(doc1.getRepository()));
 		assertEquals("x-svn://my.host:1234/svn/demo1^/vvab/xml/documents/900108.xml", strategy.getIdHead(doc1));
 		assertEquals("x-svn://my.host:1234/svn/demo1^/vvab/xml/documents/900108.xml?p=136", strategy.getId(doc1, new RepoRevision(136, new Date())));
-		assertNotEquals("repository id must be distinguished from root item id",
-				strategy.getIdRepository(doc1.getRepository()), strategy.getIdHead(doc1.getRepository(), null));		
+		assertNotEquals(strategy.getIdRepository(doc1.getRepository()), strategy.getIdHead(doc1.getRepository(), null),
+				"repository id must be distinguished from root item id");		
 	}
 	
 	@Test
