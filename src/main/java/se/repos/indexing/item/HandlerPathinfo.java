@@ -139,6 +139,7 @@ public class HandlerPathinfo implements IndexingItemHandler {
 			d.setField("pathstat", STAT_REPLACE);
 		} else if (item.isDelete()) {
 			d.setField("pathstat", STAT_DELETE);
+			// TODO: Remove idhead since the item could not be found at head. Would prevent accidental hit in graph traversals.
 		} else if (item.isContent()) {
 			d.setField("pathstat", STAT_MODIFY);
 		}
