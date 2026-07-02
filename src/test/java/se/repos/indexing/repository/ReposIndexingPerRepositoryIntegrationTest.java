@@ -73,13 +73,17 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 		String[] split = str.split("/");
 		return split[split.length-1];
 	}
+
+	private void clearRepositem() throws SolrServerException, IOException {
+		repositem.deleteByQuery("*:*");
+		repositem.commit();
+	}
 	
 	@Test
 	@ActivateRequestContext
 	public void testMarkItemHead() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -256,8 +260,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHeadFolderFileModified() throws IOException, SolrServerException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r4-filemodified.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -286,8 +289,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHeadCopy() throws IOException, SolrServerException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r5-copy.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -341,8 +343,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHeadCopyDeleted() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r6-copydeleted.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -387,8 +388,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 		String dumpFileName = "se/repos/indexing/testrepo1r7-adddeleted.svndump";
 		logger.info("Testing: {}", dumpFileName);
 		QuarkusMock.installMockForType(new SvnDump(dumpFileName), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -421,8 +421,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 		String dumpFileName = "se/repos/indexing/testrepo1r7-adddeleted.svndump";
 		logger.info("Testing: {}", dumpFileName);
 		QuarkusMock.installMockForType(new SvnDump(dumpFileName), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -456,8 +455,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testAbortedRev() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -554,8 +552,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testSyncTwice() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -585,8 +582,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testSyncHighLow() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
@@ -614,8 +610,7 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testIndexingModeNone() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3-indexing-mode-none.svndump"), SvnDump.class);
-		repositem.deleteByQuery("*:*");
-		repositem.commit();
+		clearRepositem();
 
 		schedule.start();
 		try {
