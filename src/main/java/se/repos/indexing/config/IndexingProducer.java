@@ -13,6 +13,7 @@ public class IndexingProducer {
 
 	@Produces
 	@Singleton
+	// TODO Remove this bridge when cms-item has migrated IdStrategyDefault to Jakarta annotations.
 	public IdStrategy createIdStrategy() {
 		return new IdStrategyDefault();
 	}
