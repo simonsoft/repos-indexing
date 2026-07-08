@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
@@ -74,7 +75,8 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 		return split[split.length-1];
 	}
 
-	private void clearRepositem() throws SolrServerException, IOException {
+	@AfterEach
+	public void clearRepositem() throws SolrServerException, IOException {
 		repositem.deleteByQuery("*:*");
 		repositem.commit();
 	}
@@ -83,7 +85,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHead() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -260,7 +261,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHeadFolderFileModified() throws IOException, SolrServerException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r4-filemodified.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -289,7 +289,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHeadCopy() throws IOException, SolrServerException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r5-copy.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -343,7 +342,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testMarkItemHeadCopyDeleted() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r6-copydeleted.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -388,7 +386,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 		String dumpFileName = "se/repos/indexing/testrepo1r7-adddeleted.svndump";
 		logger.info("Testing: {}", dumpFileName);
 		QuarkusMock.installMockForType(new SvnDump(dumpFileName), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -421,7 +418,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 		String dumpFileName = "se/repos/indexing/testrepo1r7-adddeleted.svndump";
 		logger.info("Testing: {}", dumpFileName);
 		QuarkusMock.installMockForType(new SvnDump(dumpFileName), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -455,7 +451,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testAbortedRev() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -552,7 +547,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testSyncTwice() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -582,7 +576,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testSyncHighLow() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
@@ -610,7 +603,6 @@ public class ReposIndexingPerRepositoryIntegrationTest {
 	@ActivateRequestContext
 	public void testIndexingModeNone() throws SolrServerException, IOException {
 		QuarkusMock.installMockForType(new SvnDump("se/repos/indexing/testrepo1r3-indexing-mode-none.svndump"), SvnDump.class);
-		clearRepositem();
 
 		schedule.start();
 		try {
