@@ -59,9 +59,9 @@ public class IdStrategyDefaultTest {
 		CmsItemId doc1 = new CmsItemIdArg("x-svn://my.host:1234/svn/demo1^/vvab/xml/documents/900108.xml").withPegRev(136L);
 		assertEquals("x-svn://my.host:1234/svn/demo1^", strategy.getIdRepository(doc1.getRepository()));
 		assertEquals("x-svn://my.host:1234/svn/demo1^/vvab/xml/documents/900108.xml", strategy.getIdHead(doc1));
-			assertEquals("x-svn://my.host:1234/svn/demo1^/vvab/xml/documents/900108.xml?p=136", strategy.getId(doc1, new RepoRevision(136, new Date())));
-			assertNotEquals("repository id must be distinguished from root item id",
-					strategy.getIdRepository(doc1.getRepository()), strategy.getIdHead(doc1.getRepository(), null));
+		assertEquals("x-svn://my.host:1234/svn/demo1^/vvab/xml/documents/900108.xml?p=136", strategy.getId(doc1, new RepoRevision(136, new Date())));
+		assertNotEquals("repository id must be distinguished from root item id",
+				strategy.getIdRepository(doc1.getRepository()), strategy.getIdHead(doc1.getRepository(), null));
 	}
 	
 	@Test
