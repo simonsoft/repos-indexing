@@ -3,11 +3,11 @@
  */
 package se.repos.indexing.solrj;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.apache.solr.client.solrj.SolrClient;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 public class MarkerCommitSolrjRepositem extends MarkerCommitSolrj {
 

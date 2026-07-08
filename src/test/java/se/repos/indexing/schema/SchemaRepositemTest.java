@@ -3,24 +3,28 @@
  */
 package se.repos.indexing.schema;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.util.Date;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.After;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.*;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.TestProfile;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import se.repos.indexing.config.SolrRepositemProfile;
 import se.repos.indexing.item.HandlerPathinfo;
 import se.repos.indexing.item.IndexingItemProgress;
 import se.repos.indexing.twophases.IndexingDocIncrementalSolrj;
@@ -30,31 +34,18 @@ import se.simonsoft.cms.item.RepoRevision;
 import se.simonsoft.cms.item.events.change.CmsChangesetItem;
 import se.simonsoft.cms.item.indexing.IdStrategyDefault;
 
-public class SchemaRepositemTest extends SolrTestCaseJ4 {
+@QuarkusTest
+@TestProfile(SolrRepositemProfile.class)
+public class SchemaRepositemTest {
 
-	public static String solrhome = "se/repos/indexing/solr";
-	
-	private SolrClient solrTestServer = null;
+	@Inject
+	@Named("repositem")
+	SolrClient repositem;
 
-	@BeforeClass
-	public static void beforeTests() throws Exception {
-		try {
-			SolrTestCaseJ4.initCore(solrhome + "/repositem/conf/solrconfig.xml", solrhome + "/repositem/conf/schema.xml",
-					"src/test/resources/" + solrhome); // has to be in classpath because "collection1" is hardcoded in TestHarness initCore/createCore
-		} catch (Exception e) {
-			System.out.println("getSolrConfigFile()=" + getSolrConfigFile());
-			System.out.println("testSolrHome=" + testSolrHome);
-			throw e;
-		}
-	}
-	
-	@After
-	public void tearDown() throws Exception {
-		//printHits(new SolrQuery("*:*"));
-		// tests have different repositories so let's see if they can use the same solr instance //solrTestServer = null;
-		// clear data from this test
-		//getSolr().deleteByQuery("*:*");
-		super.tearDown();
+	@AfterEach
+	public void clearIndex() throws SolrServerException, IOException {
+		repositem.deleteByQuery("*:*");
+		repositem.commit();
 	}
 	
 	@SuppressWarnings("unused")
@@ -74,13 +65,10 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 	}
 
 	/**
-	 * @return instance for injection when integration testing our logic with solr, for index testing we do fine with SolrTestCaseJ4 helper methods
+	 * @return instance for integration testing our logic with Solr.
 	 */
 	public SolrClient getSolr() {
-		if (solrTestServer == null) {
-			solrTestServer = new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName());
-		}
-		return solrTestServer;
+		return repositem;
 	}
 	
 	@Test
@@ -375,7 +363,7 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		assertEquals("Should match Java Method 2 Name camelcase", 1, solr.query(new SolrQuery("text:getMethod2Name")).getResults().getNumFound());
 		assertEquals("Should match Java Method 2 Name lowercase", 1, solr.query(new SolrQuery("text:getmethod2name")).getResults().getNumFound());
 		assertEquals("Should match Java Method 2 Name wildcard", 1, solr.query(new SolrQuery("text:getmethod2*")).getResults().getNumFound());
-		
+
 		assertEquals("Should match Product Name case-switch", 1, solr.query(new SolrQuery("text:ProductNAME")).getResults().getNumFound());
 		assertEquals("Should match Product Name lowercase", 1, solr.query(new SolrQuery("text:productname")).getResults().getNumFound());
 		assertEquals("Should match Product Name leading capital", 1, solr.query(new SolrQuery("text:Productname")).getResults().getNumFound());
@@ -413,7 +401,8 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 	}
 	
 	
-	@Test @Ignore //Stem Possessive is a feature of the WDF.
+	@Test
+	@Disabled("Stem Possessive is a feature of the WDF.")
 	public void testFulltextSearchEnglishPossessive() throws Exception {
 		SolrClient solr = getSolr();
 		SolrInputDocument doc = new SolrInputDocument();
@@ -505,7 +494,7 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		assertEquals("Should match exact email - Quoted", 1, solr.query(new SolrQuery("text:\"support@example.com\"")).getResults().getNumFound());
 		
 		assertEquals("Could match part 1", 1, solr.query(new SolrQuery("text:support")).getResults().getNumFound());
-		assertEquals("Could match part 2", 1, solr.query(new SolrQuery("text:example.com")).getResults().getNumFound());	
+		assertEquals("Could match part 2", 1, solr.query(new SolrQuery("text:example.com")).getResults().getNumFound());
 	}
 	
 	
@@ -542,12 +531,12 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 				2, solr.query(new SolrQuery("path:dir*")).getResults().getNumFound());
 		assertEquals("Both head and historical should be searchable on pathext",
 				2, solr.query(new SolrQuery("pathext:txt")).getResults().getNumFound());
-		assertEquals("Text search for historical has been scoped out, if made stored it might affect access control requirements", 
+		assertEquals("Text search for historical has been scoped out, if made stored it might affect access control requirements",
 		//assertEquals("Historical should still be searchable on text after head flag update",
 				0, solr.query(new SolrQuery("text:secret")).getResults().getNumFound());
 	}
 	
-	
+	@Test
 	public void testHandleRepeatedPathSegments() throws SolrServerException, IOException {
 		SolrClient solr = getSolr();		
 		// Not really unit testing the schema here because the path logic in the handler is too relevant - could be switched to 
@@ -569,7 +558,7 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 	
 
 	@Test
-	@Ignore // very incomplete
+	@Disabled("Very incomplete.")
 	public void testPathAnalysis() throws SolrServerException, IOException {
 		SolrClient solr = getSolr();		
 		// Not really unit testing the schema here because the path logic in the handler is too relevant - could be switched to 
@@ -591,5 +580,4 @@ public class SchemaRepositemTest extends SolrTestCaseJ4 {
 		
 		fail("need to test effects of analyzed path* fields and confirm the need for name and extension");
 	}
-	
 }

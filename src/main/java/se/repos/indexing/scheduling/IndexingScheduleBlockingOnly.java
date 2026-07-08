@@ -5,7 +5,7 @@ package se.repos.indexing.scheduling;
 
 import java.util.Collections;
 
-import javax.inject.Singleton;
+import jakarta.inject.Singleton;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

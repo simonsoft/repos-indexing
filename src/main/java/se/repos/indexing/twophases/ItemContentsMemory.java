@@ -6,7 +6,7 @@ package se.repos.indexing.twophases;
 import java.io.IOException;
 import java.io.InputStream;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import se.repos.indexing.IndexingDoc;
 import se.repos.indexing.item.ItemContentBuffer;

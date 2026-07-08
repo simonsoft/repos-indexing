@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.solrj;
 
-import javax.inject.Named;
+import jakarta.inject.Named;
 
 import org.apache.solr.client.solrj.SolrClient;
 

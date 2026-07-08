@@ -39,7 +39,7 @@ public class IndexingItemHandlerContentBufferHandlingTest {
 		} catch (IllegalStateException e) {
 			// expected
 		}
-		verifyZeroInteractions(buffer);
+		verifyNoInteractions(buffer);
 		enable.handle(progress);
 		assertSame(b, progress.getContents());
 		disable.handle(progress);

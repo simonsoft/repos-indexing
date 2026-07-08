@@ -192,7 +192,7 @@ public class HandlerIterationTest {
 				"Handler3+Item1", c.next().toString());
 		assertEquals("If iteration should proceed on ignored markers, it means that we'll ask for a decision for all markers at the first item reaching them",
 				"Marker2+Item1", c.next().toString());
-		
+
 		assertEquals("Marker2 isn't ignored so iteration should go to Item2 next",
 				"Handler1+Item2", c.next().toString());
 		assertEquals("Handler2+Item2", c.next().toString());

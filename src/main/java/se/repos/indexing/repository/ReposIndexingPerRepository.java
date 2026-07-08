@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Semaphore;
 
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +36,7 @@ import se.simonsoft.cms.item.inspection.CmsChangesetReader;
 import se.simonsoft.cms.item.inspection.CmsContentsReader;
 import se.simonsoft.cms.item.properties.CmsItemProperties;
 
+@RequestScoped
 public class ReposIndexingPerRepository implements ReposIndexing {
 
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -95,7 +96,7 @@ public class ReposIndexingPerRepository implements ReposIndexing {
 	}
 
 	@Inject
-	public void setRevisionLookup(@Named("inspection") CmsRepositoryLookup lookup) {
+	public void setRevisionLookup(CmsRepositoryLookup lookup) {
 		this.revisionLookup = lookup;
 	}
 	

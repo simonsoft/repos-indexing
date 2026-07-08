@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.twophases;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import se.repos.indexing.item.ItemPropertiesBufferStrategy;
 import se.simonsoft.cms.item.CmsItemPath;

@@ -3,7 +3,7 @@
  */
 package se.repos.indexing.twophases;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
