@@ -8,14 +8,13 @@ import java.util.Map;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import se.simonsoft.svn.runtime.SvnDumpProducer;
 
-public class MockableSvnDumpProfile implements QuarkusTestProfile {
-
-	public static final String DEFAULT_DUMP_PATH = "se/repos/indexing/testrepo1.svndump";
+public class SvnRevisionEventIndexingProfile implements QuarkusTestProfile {
 
 	@Override
 	public Map<String, String> getConfigOverrides() {
 		return Map.of(
-				SvnDumpProducer.DUMP_PATH, DEFAULT_DUMP_PATH,
-				"quarkus.solr.devservices.core", "repositem");
+				SvnDumpProducer.DUMP_PATH, MockableSvnDumpProfile.DEFAULT_DUMP_PATH,
+				"quarkus.solr.devservices.core", "repositem",
+				SvnRevisionEventIndexingObserver.ENABLED, "true");
 	}
 }
