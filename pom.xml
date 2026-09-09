@@ -164,6 +164,19 @@
 		        </execution>
 		      </executions>
 		    </plugin>
+			<plugin>
+				<groupId>com.mycila.maven-license-plugin</groupId>
+				<artifactId>maven-license-plugin</artifactId>
+				<configuration>
+					<!-- Preserve existing Simonsoft/Apache headers during license:format. -->
+					<validHeaders combine.children="append">
+						<validHeader>src/license-header-simonsoft.txt</validHeader>
+					</validHeaders>
+					<excludes combine.children="append">
+						<exclude>.idea/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 </project>
