@@ -79,7 +79,7 @@
 		<dependency>
 			<groupId>se.simonsoft</groupId>
 			<artifactId>cms-item</artifactId>
-			<version>3.2.1</version>
+			<version>3.2.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.solr</groupId>
