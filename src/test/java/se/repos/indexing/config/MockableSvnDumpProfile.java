@@ -6,7 +6,7 @@ package se.repos.indexing.config;
 import java.util.Map;
 
 import io.quarkus.test.junit.QuarkusTestProfile;
-import se.simonsoft.svn.runtime.SvnDumpConfig;
+import se.simonsoft.svn.runtime.SvnDumpProducer;
 
 public class MockableSvnDumpProfile implements QuarkusTestProfile {
 
@@ -15,7 +15,7 @@ public class MockableSvnDumpProfile implements QuarkusTestProfile {
 	@Override
 	public Map<String, String> getConfigOverrides() {
 		return Map.of(
-				SvnDumpConfig.DUMP_PATH, DEFAULT_DUMP_PATH,
+				SvnDumpProducer.DUMP_PATH, DEFAULT_DUMP_PATH,
 				"quarkus.solr.devservices.core", "repositem");
 	}
 }
