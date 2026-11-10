@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	
 	<artifactId>repos-indexing</artifactId>
-	<version>0.40.0-SNAPSHOT</version>
+	<version>${revision}</version>
 	<packaging>jar</packaging>
 	
 	<name>${project.artifactId}-${project.version}</name>
@@ -12,7 +12,7 @@
 	<parent>
 		<groupId>se.repos</groupId>
 		<artifactId>maven-parent</artifactId>
-		<version>11.0.2</version>
+		<version>21.0-SNAPSHOT</version>
 		<relativePath/>
 	</parent>
 	
@@ -30,22 +30,22 @@
 		<repository>
 			<id>repos.open.repo</id>
 			<name>Simonsoft / Repos Open Repository</name>
-			<url>http://opensource.simonsoft.se/maven/</url>
+			<url>https://opensource.simonsoft.se/maven/</url>
 		</repository>		
+		<!-- The SVN extension is published to the private repository. -->
+		<repository>
+			<id>simonsoft-releases</id>
+			<name>Simonsoft Releases</name>
+			<url>https://maven.simonsoft.se/releases/</url>
+		</repository>
 	</repositories>
 
 	<properties>
+		<revision>0.40-SNAPSHOT</revision>
 		<solr-version>9.6.1</solr-version>
 		
-		<quarkus-plugin.version>3.39.2</quarkus-plugin.version>
 		<quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
 		<quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-		<quarkus.platform.version>3.39.2</quarkus.platform.version>
-		<maven.compiler.source>21</maven.compiler.source>
-		<maven.compiler.target>21</maven.compiler.target>
-		
-		<mockito-version>5.21.0</mockito-version>
-		<surefire-plugin.version>3.2.5</surefire-plugin.version>
 	</properties>
 	
 	<dependencyManagement>
@@ -100,8 +100,12 @@
 		-->
 		<dependency>
 			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
 			<artifactId>jcl-over-slf4j</artifactId>
-			<version>${slf4j-version}</version>
+			<version>2.0.18</version>
 			<scope>test</scope>
 		</dependency>		
 		<dependency>
@@ -112,7 +116,18 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>${logback-version}</version>
+			<version>1.5.38</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -141,7 +156,6 @@
 			<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire-plugin.version}</version>
                 <configuration>
                     <argLine>
                         -Djava.util.logging.manager=org.jboss.logmanager.LogManager
@@ -151,19 +165,6 @@
                     </argLine>
                 </configuration>
             </plugin>
-            <plugin>
-		      <groupId>org.jboss.jandex</groupId>
-		      <artifactId>jandex-maven-plugin</artifactId>
-		      <version>1.2.1</version>
-		      <executions>
-		        <execution>
-		          <id>make-index</id>
-		          <goals>
-		            <goal>jandex</goal>
-		          </goals>
-		        </execution>
-		      </executions>
-		    </plugin>
 			<plugin>
 				<groupId>com.mycila.maven-license-plugin</groupId>
 				<artifactId>maven-license-plugin</artifactId>
